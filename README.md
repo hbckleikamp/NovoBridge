@@ -1,7 +1,7 @@
 # NovoBridge
 
 This is the repository for the NovoBridge pipeline, as described in:<br>
-          Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BiorXiv (2020) (updated as soon as accepted)      
+          Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BiorXiv (2020) (updated as soon as accepted)      
 
 Available from:<br>
 https://www.biorxiv.org/content/10.1101/2020.08.16.252924v1
