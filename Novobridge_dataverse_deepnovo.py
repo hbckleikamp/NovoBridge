@@ -92,7 +92,7 @@ os.chdir(str(Path(os.path.abspath(getsourcefile(lambda:0))).parents[0]))
 print(os.getcwd())
 
 #remove chained assignment warnings
-pd.options.mode.chained_assignment = None  # default='warn'
+#pd.options.mode.chained_assignment = None  # default='warn'
 #%% load peptide file 
 #Important! the only required column for analysis is a list of peptides with the header: "Peptide". 
 
@@ -108,7 +108,7 @@ for filename in os.listdir(pathin):
             if filename.endswith('.csv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
             if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)))   
             
-            xlsdf=xlsdf.fillna("0") #replace nans with zero
+            xlsdf=xlsdf.fillna(0) #replace nans with zero
             
             #%% if DeepNovo output, convert to PEAKS output
             
@@ -201,28 +201,35 @@ for filename in os.listdir(pathin):
                     except:
                         "sleeping"
                         time.sleep(2)
+                        
+                        
+            # is used to divide a list into "chunks" with a generator
+            def chunks(lst,n):
+                for i in range(0,len(lst),n):
+                    yield lst[i:i+n]
             
-            counter=0
+
             taxalist=list()
             funlist=list()
+
             threads=[]
-            for i in range(0,len(steps)-1):
+            counter=0
+            for chunk in chunks(unipeps,batchsize):
+                counter+=1
+                print(counter)
+                query="&input[]=".join(chunk)
+                    
+                #taxonomy
+                turl=twl+query+twr 
+                t=threading.Thread(target=unipept_scrape, args=[taxalist,turl])
+                t.start()
+                threads.append(t)
                 
-                    counter+=1
-                    print(counter)
-                    query="&input[]=".join(unipeps[steps[i]:steps[i+1]])
-                    
-                    #taxonomy
-                    turl=twl+query+twr 
-                    t=threading.Thread(target=unipept_scrape, args=[taxalist,turl])
-                    t.start()
-                    threads.append(t)
-                    
-                    #function
-                    furl=fwl+query+fwr 
-                    t=threading.Thread(target=unipept_scrape, args=[funlist,furl])
-                    t.start()
-                    threads.append(t)
+                #function
+                furl=fwl+query+fwr 
+                t=threading.Thread(target=unipept_scrape, args=[funlist,furl])
+                t.start()
+                threads.append(t)
                  
             for thread in threads:
                 thread.join()
