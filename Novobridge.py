@@ -25,9 +25,6 @@ length_cutoff=7    # mininum required peptide length
 Area_cutoff=0      # mininum required peak area
 Intensity_cutoff=0 # mininum required intensity
 
-
-No_candidates=1    # number of de novo candidates tried untill a hit is returned
-
 #get variables for writing to output
 current_vars=set(dir()).difference(starting_vars)
 parameters=[i for i in locals().items() if i[0] in current_vars]
@@ -37,14 +34,12 @@ starting_vars=dir()
 
 #(defaults slightly more stringent filtering)
 comp_ALC_cutoff=70      # miniumum required ALC score (Peaks score)
-comp_Score_filter=-0.75 # mininum required score cutoff (DeepNovo score)
+comp_Score_cutoff=-0.75 # mininum required score cutoff (DeepNovo score)
 
 comp_ppm_cutoff=15      # maximum allowed ppm
 comp_length_cutoff=7    # mininum required peptide length
 comp_Area_cutoff=0      # mininum required peak area
 comp_Intensity_cutoff=0 # mininum required intensity
-
-
 
 cutbranch=3    # minimum amount of unique peptides per taxonomic branch in denoising
 
@@ -76,7 +71,7 @@ import matplotlib.pyplot as plt
 
 import random, re, requests
 import threading, time, string
-import pickle, heapq, math
+import pickle
 
 
 from Bio.SeqUtils import molecular_weight
@@ -108,18 +103,14 @@ for filename in os.listdir(pathin):
             if filename.endswith('.csv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
             if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)))   
             
-            xlsdf=xlsdf.fillna(0) #replace nans with zero
+            xlsdf=xlsdf.fillna("0") #replace nans with zero
             
             #%% if DeepNovo output, convert to PEAKS output
-            
             if 'predicted_sequence' in xlsdf.columns:
                 
                 xlsdf["Peptide"]=xlsdf["predicted_sequence"]           
                 xlsdf=xlsdf[xlsdf["Peptide"]!="0"]
-                
-                #for quantification through area
-                if "feature_area" in xlsdf.columns: xsldf=xlsdf.rename(columns={"feature_area":"Area"}) 
-                
+            
                 #calculate ppm shift from m/z
                 mass=np.zeros((1,len(xlsdf)))
                 mass+=xlsdf["Peptide"].str.count("(Carbamidomethylation)").fillna(0)*57.021463
@@ -130,8 +121,17 @@ for filename in os.listdir(pathin):
                 xlsdf['calculated_mass']=(mass+xlsdf['Peptide'].apply(lambda x: molecular_weight(x, "protein")).to_numpy()).T
                 xlsdf['precursor_mass']=xlsdf['precursor_mz']*xlsdf['precursor_charge']-xlsdf['precursor_charge']*1.007277                
                 xlsdf["ppm"]=(1000000/xlsdf['calculated_mass'])*(xlsdf['calculated_mass']-xlsdf['precursor_mass'])
-
-            #%%
+                
+                #rename columns
+                if "feature_id" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_id":"Scan"})  
+                if "feature_area" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_area":"Area"})  
+                if "feature_intensity" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_intensity":"Intensity"})  
+            
+            #set datatypes as float
+            for i in ['Tag Length','ALC (%)','predicted_score','ppm','Area','Intensity']:
+                if i in xlsdf.columns:
+                    xlsdf[i]=xlsdf[i].astype(float) 
+            
             #add Scan if not present, add Scan
             if 'Scan' not in xlsdf.columns: 
                 xlsdf['Scan']=list(range(0,len(xlsdf)))
@@ -239,12 +239,12 @@ for filename in os.listdir(pathin):
             taxa=pd.DataFrame(taxalist)
             [taxa.pop(x) for x in taxa.columns if x not in fields]
             
-            #remove protein counts and merge outputs
+            #parse function dataframe
             funs=pd.DataFrame(funlist)
-            funs["ec"][funs["ec"].astype(bool)]=funs["ec"][funs["ec"].astype(bool)].apply(lambda x: " ".join(pd.json_normalize(x)["ec_number"] ))
-            funs["go"][funs["go"].astype(bool)]=funs["go"][funs["go"].astype(bool)].apply(lambda x: " ".join(pd.json_normalize(x)["go_term"] ))
-            funs["ipr"][funs["ipr"].astype(bool)]=funs["ipr"][funs["ipr"].astype(bool)].apply(lambda x: " ".join(pd.json_normalize(x)["code"] ))
-            
+            funs["ec"]= funs["ec"].apply( lambda x: " ".join(pd.json_normalize(x)["ec_number"]) if x else [])
+            funs["go"]= funs["go"].apply( lambda x: " ".join(pd.json_normalize(x)["go_term"]) if x else [])
+            funs["ipr"]=funs["ipr"].apply(lambda x: " ".join(pd.json_normalize(x)["code"]) if x else [])
+
             #merge annotations
             taxa.set_index('peptide',inplace=True, drop=True)
             funs.set_index('peptide',inplace=True, drop=True)
@@ -255,7 +255,7 @@ for filename in os.listdir(pathin):
             xlsdf=xlsdf.mask(xlsdf.applymap(str).eq('[]'))
             xlsdf=xlsdf.fillna("")
             #%% write result
-            
+
             pathout="output_unipept"
             if not os.path.exists(pathout): os.makedirs(pathout)
             
@@ -281,6 +281,9 @@ for filename in os.listdir(pathin):
                 
                 if 'ALC (%)' in xlsdf.columns:
                     xlsdf=xlsdf[xlsdf['ALC (%)']>=comp_ALC_cutoff]
+                    
+                if 'predicted_score' in xlsdf.columns:
+                    xlsdf=xlsdf[xlsdf['predicted_score']<=comp_Score_cutoff] #scoring DeepNovo 
                 
                 if 'ppm' in xlsdf.columns: 
                     xlsdf=xlsdf[xlsdf['ppm']<=comp_ppm_cutoff]
