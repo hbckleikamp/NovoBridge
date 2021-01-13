@@ -115,13 +115,26 @@ for filename in os.listdir(pathin):
                 mass=np.zeros((1,len(xlsdf)))
                 mass+=xlsdf["Peptide"].str.count("(Carbamidomethylation)").fillna(0)*57.021463
                 mass+=xlsdf["Peptide"].str.count("(Oxidation)").fillna(0)*15.994915
-                
+
                 xlsdf['Peptide']=xlsdf['Peptide'].apply(lambda x: re.sub("[\(\[].*?[\)\]]", "", x).replace(",","")) #remove ptms in peptides
                 xlsdf["Tag Length"]=xlsdf['Peptide'].apply(len)
-                xlsdf['calculated_mass']=(mass+xlsdf['Peptide'].apply(lambda x: molecular_weight(x, "protein")).to_numpy()).T
+
+                
+                #%% calculate peptide mass differently
+                
+                std_aa_mass = {'G': 57.02146, 'A': 71.03711, 'S': 87.03203, 'P': 97.05276, 'V': 99.06841,
+                               'T': 101.04768,'C': 103.00919,'L': 113.08406,'I': 113.08406,'J': 113.08406,
+                               'N': 114.04293,'D': 115.02694,'Q': 128.05858,'K': 128.09496,'E': 129.04259,
+                               'M': 131.04049,'H': 137.05891,'F': 147.06841,'U': 150.95364,'R': 156.10111,
+                               'Y': 163.06333,'W': 186.07931,'O': 237.14773}    
+
+                def mass_calc(x,std_aa_mass=std_aa_mass):
+                    return sum(std_aa_mass.get(aa) for aa in x)+18.01056
+                
+                xlsdf['calculated_mass']=mass[0]+xlsdf['Peptide'].apply(lambda x: mass_calc(x)).values
                 xlsdf['precursor_mass']=xlsdf['precursor_mz']*xlsdf['precursor_charge']-xlsdf['precursor_charge']*1.007277                
                 xlsdf["ppm"]=(1000000/xlsdf['calculated_mass'])*(xlsdf['calculated_mass']-xlsdf['precursor_mass'])
-                
+
                 #rename columns
                 if "feature_id" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_id":"Scan"})  
                 if "feature_area" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_area":"Area"})  
