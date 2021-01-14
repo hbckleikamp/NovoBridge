@@ -34,7 +34,7 @@ starting_vars=dir()
 
 #(defaults slightly more stringent filtering)
 comp_ALC_cutoff=70      # miniumum required ALC score (Peaks score)
-comp_Score_cutoff=-0.75 # mininum required score cutoff (DeepNovo score)
+comp_Score_cutoff=-0.1 # mininum required score cutoff (DeepNovo score)
 
 comp_ppm_cutoff=15      # maximum allowed ppm
 comp_length_cutoff=7    # mininum required peptide length
