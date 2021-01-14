@@ -105,7 +105,7 @@ for filename in os.listdir(pathin):
             
             xlsdf=xlsdf.fillna("0") #replace nans with zero
             
-            #%% if DeepNovo output, convert to PEAKS output
+            #if DeepNovo output, convert to PEAKS output
             if 'predicted_sequence' in xlsdf.columns:
                 
                 xlsdf["Peptide"]=xlsdf["predicted_sequence"]           
@@ -115,13 +115,9 @@ for filename in os.listdir(pathin):
                 mass=np.zeros((1,len(xlsdf)))
                 mass+=xlsdf["Peptide"].str.count("(Carbamidomethylation)").fillna(0)*57.021463
                 mass+=xlsdf["Peptide"].str.count("(Oxidation)").fillna(0)*15.994915
-
                 xlsdf['Peptide']=xlsdf['Peptide'].apply(lambda x: re.sub("[\(\[].*?[\)\]]", "", x).replace(",","")) #remove ptms in peptides
-                xlsdf["Tag Length"]=xlsdf['Peptide'].apply(len)
-
-                
-                #%% calculate peptide mass differently
-                
+             
+                #%% calculate peptide mass (with monoisotopic masses)                
                 std_aa_mass = {'G': 57.02146, 'A': 71.03711, 'S': 87.03203, 'P': 97.05276, 'V': 99.06841,
                                'T': 101.04768,'C': 103.00919,'L': 113.08406,'I': 113.08406,'J': 113.08406,
                                'N': 114.04293,'D': 115.02694,'Q': 128.05858,'K': 128.09496,'E': 129.04259,
@@ -140,12 +136,16 @@ for filename in os.listdir(pathin):
                 if "feature_area" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_area":"Area"})  
                 if "feature_intensity" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_intensity":"Intensity"})  
             
+            #add Tag Length if not present
+            if "Tag Length" not in xlsdf.columns: 
+                xlsdf["Tag Length"]=xlsdf['Peptide'].apply(len)
+            
             #set datatypes as float
             for i in ['Tag Length','ALC (%)','predicted_score','ppm','Area','Intensity']:
                 if i in xlsdf.columns:
                     xlsdf[i]=xlsdf[i].astype(float) 
             
-            #add Scan if not present, add Scan
+            #add Scan if not present
             if 'Scan' not in xlsdf.columns: 
                 xlsdf['Scan']=list(range(0,len(xlsdf)))
                         
