@@ -21,6 +21,7 @@ The current version of the pipeline is included as a single script: <code>Novobr
 4. Functional annotation and quantification with KEGG orthologies
 
 #### What input files does it use?
+- It is recommended to use de novo sequence lists obtained from high resolution mass spectrometers. The pipeline was established and tested using data from QE Orbitrap mass spectrometers.
 - NovoBridge can work with filetypes -.csv, -.xls, or in -.xlsx, which either simply contain a list of peptides (with header: Peptide),
   <br> or with file formats from PEAKs and DeepNovo. The input files need to be stored in the folder input_peaks. 
 - Apart from the input files, there are two utilities files: <code>keg.pkl</code> which is required for functional annotation, and <code>Krona_template.xlsm</code>, which is required for Krona-plot visualization. Both files can be created with the script <code>download_utilities.py</code>
