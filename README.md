@@ -23,7 +23,7 @@ The current version of the pipeline is included as a single script: <code>Novobr
 #### What input files does it use?
 - It is recommended to use de novo sequence lists obtained from high resolution mass spectrometers. The pipeline was established and tested with data from QE Orbitrap mass spectrometers.
 - NovoBridge can work with filetypes -.csv, -.xls, or in -.xlsx, which either simply contain a list of peptides (with header: Peptide),
-  <br> or with file formats from PEAKs and DeepNovo. The input files need to be stored in the folder input_peaks. 
+  <br> such as obtained from PEAKS and DeepNovo. The input files need to be copied into the folder 'input_peaks'. 
 - Apart from the input files, there are two utilities files: <code>keg.pkl</code> which is required for functional annotation, and <code>Krona_template.xlsm</code>, which is required for Krona-plot visualization. Both files can be created with the script <code>download_utilities.py</code>
 
 #### What outputs does it generate?
@@ -40,7 +40,8 @@ If you would like to use this pipeline in your research, please cite the followi
       
 - Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BiorXiv (2020) (updated as soon as accepted)           
 
-- Robbert Gurdeep Singh, Alessandro Tanca, Antonio Palomba, Felix Van der Jeugt, Pieter Verschaffelt, Sergio Uzzau, Lennart Martens, Peter Dawyndt, and Bart Mesuere. (2019). Unipept 4.0: Functional Analysis of Metaproteome Data. J. Proteome Res. 2019, 18, 606−615 Article. 
+- Robbert Gurdeep Singh, Alessandro Tanca, Antonio Palomba, Felix Van der Jeugt, Pieter Verschaffelt, Sergio Uzzau, Lennart Martens, Peter Dawyndt, and Bart Mesuere. (2019). Unipept 4.0: Functional Analysis of Metaproteome Data. J. Proteome Res. 2019, 18, 606−615 Article.
+
 - Kanehisa, M., & Goto, S. (2000). KEGG : Kyoto Encyclopedia of Genes and Genomes, 28(1), 27–30.
 
 
@@ -50,7 +51,7 @@ If you would like to use this pipeline in your research, please cite the followi
 -Hugo Kleimamp (Developer): H.B.C.Kleikamp@tudelft.nl<br> 
 -Martin Pabst: M.Pabst@tudelft.nl<br>
 
-#### Links to other repositories:
+#### Recommended links to other repositories:
 https://github.com/unipept<br>
 https://github.com/marbl/Krona
 
