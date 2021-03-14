@@ -21,17 +21,18 @@ The current version of the pipeline is included as a single script: <code>Novobr
 4. Functional annotation and quantification with KEGG orthologies
 
 #### Running Novobridge
--Novobridge is designed as a single "tuneable" python script. It does not offer command line options, but parameters can be altered in the script itself.
--The 
--Optional required files are `keg.pkl`,
--To run the script, simply open it in your interpreter of choice and run. 
+- Novobridge is designed as a single "tuneable" python script. It does not offer command line options, but parameters can be altered in the script itself.
+- The script will automatically loop through all files present in the folder `input_peaks` , which should be located in the same directory as the script Novobridge.py
+- The input path can be altered by changing variable `pathin` in Novobridge.py
+- To run the script, simply open it in your interpreter of choice and run. 
+- Outputs will be generated in folders: `output_unipept`, `output_composition`, `output_function`.
+
 
 #### What input files does it use?
 - It is recommended to use de novo sequence lists obtained from high resolution mass spectrometers. The pipeline was established and tested with data from QE Orbitrap mass spectrometers.
-- NovoBridge can work with filetypes -.csv, -.xls, or in -.xlsx. The only requirement 
- 
-  which either simply contain a list of peptides (with header: Peptide),
-  <br> such as obtained from PEAKS and DeepNovo. The input files need to be copied into the folder 'input_peaks'. 
+- NovoBridge can work with filetypes -.txt, -.tsv, -.csv, -.xls, or in -.xlsx. 
+- The only required input data to run Novobridge is a single column of peptides with header `Peptide`
+- When filtering steps are required, Novobridge is designed to work with output formats from de novo sequencing softwars Peaks and DeepNovo.
 - Apart from the input files, there are two utilities files: <code>keg.pkl</code> which is required for functional annotation, and <code>Krona_template.xlsm</code>, which is required for Krona-plot visualization. Both files can be created with the script <code>download_utilities.py</code>
 
 #### What outputs does it generate?
