@@ -100,7 +100,13 @@ for filename in os.listdir(pathin):
     if filename[0].isalnum(): # check if not a hidden file, filename should start with alphanumeric
         for Randomize in [False, 'scramble']: 
             xlsdf=[]
+            
+            if filename.endswith('.txt'):                        
+                with open(filename,"r") as f: 
+                    xlsdf=pd.DataFrame(f.readlines())
+            
             if filename.endswith('.csv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
+            if filename.endswith('.tsv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep="\t")
             if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)),engine="openpxyl")   
             if len(xlsdf):
                 xlsdf=xlsdf.fillna("0") #replace nans with zero
