@@ -130,11 +130,11 @@ Quantification parameters
 
 #### How are quantities calculated?
 
-As a default, taxa and kegg pathways are quantified with four different methods and 3 different targets.
-The targets determine to count by either spectral counts of peptides, by Area or by Intensity.
-The user can also supply custom columns as Targets to count by, provided he changes the parameters `tax_count_targets` or `fun_count_targets`.
+As a default, taxa and kegg pathways are quantified with 3 different methods and 3 different targets.
+The targets determine to count by either `Spectral_counts` of peptides, by `Area` or by `Intensity`, if they are available.
+The user can also supply custom columns as target to count by, provided the parameters `tax_count_targets` or `fun_count_targets` are changed.
 
-If the target is Spectral counting, the only way of quantification is a sum of total spectra. However, when quantification is done on Area, Intensity or a custom parameter, different quantification methods have been added such as average: which averages all amounts belonging to a pathway or taxa, total: which sums all amounts, and topx: which sums the topx largest amounts, where topx is supplied by a variable.
+If the target is Spectral counting, the only way of quantification is a sum of total spectra. However, when quantification is done on Area, Intensity or a custom target, different quantification methods are available, such as `average`: which averages all amounts belonging to a pathway or taxa, `total`: which sums all amounts, and `topx`: which sums the topx largest amounts, where topx is supplied by a variable.
 
 As an example: if only spectral counts are desired as outputs, the parameter configuration could be changed to:
 `tax_count_targets="Spectral_counts`, `tax_count_methods=""`, `fun_count_targets="Spectral_counts`, `fun_count_methods=""`
