@@ -9,7 +9,7 @@ https://www.biorxiv.org/content/10.1101/2020.08.16.252924v1
 <br>
 
 #### What is Novobridge?
-Novobridge is an automated pipeline for fast processing, and integrated annotation and visualization of *de novo* proteomics data, using Unipept.
+Novobridge is an automated pipeline for fast processing, and integrated annotation and visualization of *de novo* proteomics data.
 
 <br>
 
