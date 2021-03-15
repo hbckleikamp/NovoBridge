@@ -37,7 +37,7 @@ In Part 3: Unipept functional annotations are matched to KEGG orthologies and qu
 - Novobridge is designed as a single "tunable" python script. 
 - Novobridge does not offer command line options, but parameters can be altered in the script `Novobridge.py`
 - The script will automatically loop through all files present in the folder `input_peaks`, located in the same folder as `Novobridge.py`
-- The input path can be altered by changing variable `pathin` in Novobridge.py
+- The input path can be altered by changing variable `pathin` in `Novobridge.py`
 - To run the script, simply open it in your interpreter of choice and run. 
 - Outputs will be generated in folders: `output_unipept`, `output_composition`, `output_function`.
 
