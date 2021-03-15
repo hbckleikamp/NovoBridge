@@ -14,12 +14,16 @@ try:
 except:
     pass
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+                                                        "Parameters & setup" 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 #%% parameters Part 1: Unipept submission
 starting_vars=dir()
 
+#filter parameters
 ALC_cutoff=40      # miniumum required ALC score (Peaks score)
 Score_cutoff=-0.1  # mininum required score cutoff (DeepNovo score)
-
 ppm_cutoff=20      # maximum allowed ppm
 length_cutoff=7    # mininum required peptide length
 Area_cutoff=0      # mininum required peak area
@@ -32,18 +36,23 @@ parameters=[i for i in locals().items() if i[0] in current_vars]
 #%% parameters Part 2: Composition 
 starting_vars=dir()
 
-#(defaults slightly more stringent filtering)
+#filter parameters
 comp_ALC_cutoff=70      # miniumum required ALC score (Peaks score)
 comp_Score_cutoff=-0.1 # mininum required score cutoff (DeepNovo score)
-
 comp_ppm_cutoff=15      # maximum allowed ppm
 comp_length_cutoff=7    # mininum required peptide length
 comp_Area_cutoff=0      # mininum required peak area
 comp_Intensity_cutoff=0 # mininum required intensity
-
 cutbranch=3    # minimum amount of unique peptides per taxonomic branch in denoising
 
-normalize=False # normalize quantification to total for that rank
+#Which taxa to annotate
+comp_ranks=["superkingdom","phylum","class","order","family","genus"]
+
+#quantification parameters
+tax_count_targets=["Spectral_counts","Area","Intensity"]
+tax_count_methods=["average","total","topx"] 
+tax_topx=5
+tax_normalize=False # normalize quantification to total for that rank
 
 #get variables for writing to output
 current_vars=set(dir()).difference(starting_vars)
@@ -61,6 +70,12 @@ Pathways=['09100 Metabolism',
 #which levels to include
 cats=["cat1","cat2","cat3","cat4"]                                    
 
+#quantification parameters
+fun_count_targets=["Spectral_counts","Area","Intensity"]
+fun_count_methods=["average","total","topx"] 
+fun_topx=5
+fun_normalize=False # normalize quantification to total for that rank
+
 current_vars=set(dir()).difference(starting_vars)
 fun_parameters=comp_parameters+[i for i in locals().items() if i[0] in current_vars]
 
@@ -77,6 +92,8 @@ from itertools import chain
 from collections import Counter
 from openpyxl import load_workbook 
 
+
+
 #%% change directory to script directory (should work on windows and mac)
 import os
 from pathlib import Path
@@ -86,16 +103,13 @@ print(os.getcwd())
 
 #%% 
 
-
-
-#%% load peptide file 
-#Important! the only required column for analysis is a list of peptides with the header: "Peptide". 
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
                                                     "Part 1: Annotation with unipept" 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-#input folder
-pathin="input_peaks"
+
+pathin="input_peaks" #input folder
+
+
 for filename in os.listdir(pathin): 
     if filename[0].isalnum(): # check if not a hidden file, filename should start with alphanumeric
         for Randomize in [False, 'scramble']: 
@@ -107,7 +121,7 @@ for filename in os.listdir(pathin):
             
             if filename.endswith('.csv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
             if filename.endswith('.tsv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep="\t")
-            if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)),engine="openpxyl")   
+            if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)),engine='openpyxl')   
             if len(xlsdf):
                 xlsdf=xlsdf.fillna("0") #replace nans with zero
                 
@@ -197,14 +211,8 @@ for filename in os.listdir(pathin):
                 fwl='http://api.unipept.ugent.be/api/v1/pept2funct.json?input[]=';
                 fwr='&equate_il=true';
                 
-                fields=["peptide",
-                        "taxon_name",
-                        "superkingdom_name",
-                        "phylum_name",
-                        "class_name",
-                        "order_name",
-                        "family_name",
-                        "genus_name"];
+                taxa=[rank+"_name" for rank in comp_ranks]
+                fields=["peptide"]+taxa
                   
                 unipeps=np.unique(xlsdf['Peptide'])
                 batchsize=100
@@ -255,8 +263,8 @@ for filename in os.listdir(pathin):
                 
                 #%% post processing
                 #remove non-regular taxonomic ranks
-                taxa=pd.DataFrame(taxalist)
-                [taxa.pop(x) for x in taxa.columns if x not in fields]
+                taxdf=pd.DataFrame(taxalist)
+                [taxdf.pop(x) for x in taxdf.columns if x not in fields]
                 
                 #parse function dataframe
                 funs=pd.DataFrame(funlist)
@@ -265,10 +273,10 @@ for filename in os.listdir(pathin):
                 funs["ipr"]=funs["ipr"].apply(lambda x: " ".join(pd.json_normalize(x)["code"]) if x else [])
     
                 #merge annotations
-                taxa.set_index('peptide',inplace=True, drop=True)
+                taxdf.set_index('peptide',inplace=True, drop=True)
                 funs.set_index('peptide',inplace=True, drop=True)
                 xlsdf.set_index('Peptide',inplace=True, drop=False)
-                xlsdf=xlsdf.join(taxa,how='left')
+                xlsdf=xlsdf.join(taxdf,how='left')
                 xlsdf=xlsdf.join(funs,how='left')
                 
                 xlsdf=xlsdf.mask(xlsdf.applymap(str).eq('[]'))
@@ -278,12 +286,15 @@ for filename in os.listdir(pathin):
                 pathout="output_unipept"
                 if not os.path.exists(pathout): os.makedirs(pathout)
                 
-                xlsfilename=str(Path(pathout,"unipept_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')))
+                basename="unipept_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                if Randomize=="scramble": basename="Rand_"+basename
+                xlsfilename=str(Path(pathout,basename))
+                
                 writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
                 xlsdf.to_excel(writer, sheet_name='Output')
                 pd.DataFrame(parameters,columns=["Name","Value"]).to_excel(writer, sheet_name='Parameters')
                 writer.save()
-                writer.close()
+
         
         #%%
                 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -313,12 +324,6 @@ for filename in os.listdir(pathin):
                     if 'Intensity' in xlsdf.columns: 
                         xlsdf=xlsdf[xlsdf['Intensity']>=comp_Intensity_cutoff]
                 
-                taxa=["superkingdom_name",
-                        "phylum_name",
-                        "class_name",
-                        "order_name",
-                        "family_name",
-                        "genus_name"]
                   
                 denoise="on"
                 if denoise=="on":
@@ -354,7 +359,7 @@ for filename in os.listdir(pathin):
                     
                     branchdf=vals
     
-                    kronafilename=str(Path(pathout,filename.replace(os.path.splitext(filename)[1], '.xlsm')))
+                    kronafilename=str(Path(pathout,"Spectral_counts_Krona_"+filename.replace(os.path.splitext(filename)[1], '.xlsm')))
                     letters=list(string.ascii_uppercase)
                     wb = load_workbook("krona_template.xlsm",read_only=False, keep_vba=True)
                     ws = wb.active
@@ -392,7 +397,7 @@ for filename in os.listdir(pathin):
                     ax2.set_xticklabels(labels, rotation=30)
                     ax2.set_title("Normalized")
                     
-                    figname=str(Path(pathout,(ylabel+"_"+filename.replace(os.path.splitext(filename)[1], '.png'))))
+                    figname=str(Path(pathout,(filename.replace(os.path.splitext(filename)[1], '.png'))))
                     plt.savefig(figname)
                     return figname      
                 
@@ -406,41 +411,79 @@ for filename in os.listdir(pathin):
                 
                 writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
                 pd.DataFrame(comp_parameters,columns=["Name","Value"]).to_excel(writer, sheet_name='Parameters')
-                letters=list(string.ascii_uppercase)
-                            
-                if Randomize==False:            
-                    #Spectral counts
-                    Spectral_Counts=pd.DataFrame()
-                    for i in taxa:
-                        counts=Counter(xlsdf[i].astype(str))
-                        if "" in counts.keys(): counts.pop("") #ignore unassigned peptides
-                        freqs=pd.Series(counts).reset_index().sort_values(by="index", axis=0, ascending=True, inplace=False).reset_index(drop=True)
-                        freqs.columns=[i,i+"_count"]
+                
+                if type(tax_count_targets)==str: tax_count_targets=list(tax_count_targets)
+                for target in tax_count_targets:
+                    
                         
-                        if normalize: freqs[i+"_count"]=freqs[i+"_count"]/freqs[i+"_count"].sum()*100 #normalize to 100% for easier comparison to metadata
-                        #alphabetic sorting
-                        Spectral_Counts = pd.concat([Spectral_Counts, freqs], axis=1) 
-        
-                    namecols=[i for i in Spectral_Counts.columns  if "count" not in i] 
-                    countcols=[i for i in Spectral_Counts.columns  if "count" in i] 
-                    Spectral_Counts=Spectral_Counts.fillna(0)
+                    if target!="Spectral_counts" and target not in xlsdf.columns:
+                        print("Target column: '"+str(target)+"' not found in data, please change parameter: 'count_targets'")
+                        continue
+                        
+                    if type(tax_count_methods)==str: tax_count_methods=list(tax_count_methods)
+                    for method in tax_count_methods:
+                        
+            
+            
+                        quantdf=pd.DataFrame()
+                        for tax in taxa:
+                            
+                            if target=="Spectral_counts":          
+                                values=Counter(xlsdf[tax].astype(str))
+                                if "" in values.keys(): values.pop("") #ignore unassigned peptides
+                                
+                            else:
+                                xlsdf[target]=xlsdf[target].astype(float)
+                                grouped=xlsdf.groupby(tax)[target]
+                                if method=="average": values=grouped.mean()
+                                elif method=="total":values=grouped.sum()
+                                elif method=="topx": values=grouped.nlargest(tax_topx).sum(level=0)
                     
-                    #write spectral counts    
-                    Spectral_Counts[namecols].to_excel(writer, sheet_name='TAX_LINEAGES')
-                    Spectral_Counts[countcols].to_excel(writer, sheet_name='TAX_COUNTS')
-                    stacked_bar(taxa,Spectral_Counts,'spectral counts',pathout, filename)
-                    writer.save()   
-                    writer.close()
+                            values=pd.Series(values).sort_values(axis=0, ascending=False, inplace=False).reset_index()
+                            values.columns=[tax,tax+"_count"]   
+                            values=values[values[tax]!=""]
+                            if tax_normalize==True: 
+                                values[tax+"_count"]=values[tax+"_count"]/values[tax+"_count"].sum()*100 #normalize to 100%
+                            
+                            quantdf = pd.concat([quantdf, values], axis=1) 
+                
+                        #writing output
+                        pathout="output_composition"
+                        if not os.path.exists(pathout): os.makedirs(pathout)
                     
-                if Randomize=="scramble":            
-                    #Spectral counts
-                    Spectral_Counts=pd.DataFrame()
-                    counts=[sum(xlsdf[i]!="") for i in taxa]
-                    ranks=[i.split("_")[0] for i in taxa]                          
-                    #write spectral counts    
-                    pd.Series(counts,index=ranks).to_excel(writer, sheet_name='RANDOM_Cts')
-                    writer.save()   
-                    writer.close()
+                        quantdfs=quantdf.fillna(0)
+                        namecols=[i for i in quantdf.columns  if "count" not in i] 
+                        countcols=[i for i in quantdf.columns  if "count" in i] 
+                       
+                        
+                        basename=filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                        if method=="topx": method=method.replace("x",str(fun_topx))
+                        if target=='Spectral_counts': basename="composition_"+target+"_"+basename
+                        else: basename="composition_"+method+"_"+target+"_"+basename
+                        if Randomize=="scramble": basename="Rand_"+basename
+                        xlsfilename=str(Path(pathout,basename))
+                        
+                        writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
+                        
+                        pardf=pd.DataFrame(comp_parameters,columns=["Name","Value"])
+                        pardf.loc[pardf["Name"]=="tax_count_targets","Value"]=target
+                        pardf.loc[pardf["Name"]=="tax_count_methods","Value"]=method
+                        if target=='Spectral_counts': pardf=pardf[pardf["Name"]!="tax_count_methods"]
+                        pd.DataFrame(pardf.to_excel(writer, sheet_name='Parameters'))
+                              
+                        quantdf[namecols].to_excel(writer, sheet_name='TAX_LINEAGES')
+                        quantdf[countcols].to_excel(writer, sheet_name='TAX_COUNTS')
+                        
+                        if target=='Spectral_counts': stacked_bar(taxa,quantdf,target,pathout, basename)
+                        else:                         stacked_bar(taxa,quantdf,method+"_"+target,pathout, basename)
+                        
+ 
+                        writer.save()   
+
+
+                
+                                        
+
                 #%%
         
                 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -452,14 +495,9 @@ for filename in os.listdir(pathin):
                 #preselect xlsdf to only have rows that have ec numbers
                 xlsdf=xlsdf[xlsdf["ec"].notnull()]
                 #calculte total area/intensity/spectral counts for normalization
-                totSpect=len(xlsdf)
-                if "Area" in xlsdf.columns:      totArea=sum(xlsdf["Area"])
-                if "Intensity" in xlsdf.columns: totInt =sum(xlsdf["Intensity"])
-                
+
                 #separate ec annotations for exact matching
                 xlsdf["ec"]=xlsdf["ec"].apply(lambda x: str(x).split(" ")) 
-                expdf=xlsdf.explode('ec')    
-                
                
                 #%% quantification
                 
@@ -477,67 +515,89 @@ for filename in os.listdir(pathin):
                     #only select pathways that are in the parameters
                     keggdf=keggdf[keggdf.isin(Pathways).any(axis=1)] 
                     #only select cats that are in the parameters
-                    keggdf=keggdf[cats+["ec"]]
+
+                    if "ec" not in cats: keggdf=keggdf.loc[keggdf.isin(Pathways).any(axis=1),cats+["ec"]] 
+                    else:                 keggdf=keggdf.loc[keggdf.isin(Pathways).any(axis=1),cats] 
                     
-                    #always quantify on spectral counts, but if present: quantify based on area/intensity
-                    columns=["Area","Intensity"] 
-                    methods=["total"] 
-                    
-                    for j in range(len(cats)):
-                        df=pd.DataFrame()
-                        print(j)
-                        counter=0
-                        for i in np.unique(keggdf[cats[j]].to_numpy()):
-                            counter+=1
-                            print(counter)
-                            ECs=keggdf.loc[i==keggdf[cats[j]],"ec"]
-                            uniscans=np.unique(expdf.loc[expdf["ec"].isin(ECs),"Scan"].to_numpy())
-                            if len(uniscans):
-                                sr=pd.Series() #every new series contains a single pathwayand its quantification
-                                sr[cats[j]]=i  #name of category (used for joining)
-                                sr[cats[j]+"_"+"Spectral_counts"]=len(uniscans) #spectral counts
+                    if type(fun_count_targets)==str: tax_count_methods=list(fun_count_targets)
+                    for target in fun_count_targets:
+                        
+                        if target!="Spectral_counts" and target not in xlsdf.columns:
+                            print("Target column: '"+str(target)+"' not found in data, please change parameter: 'count_targets'")
+                            continue
+                        
+                        if type(fun_count_methods)==str: fun_count_methods=list(fun_count_methods)
+                        for method in fun_count_methods:
+                            
+
+                            #match pathways to annotations and explode
+                            if target=="Spectral_counts":             fundf=xlsdf[["Scan","ec"]]
+                            else:                                     fundf=xlsdf[["Scan","ec",target]]
+                            
+                            fundf=fundf.explode("ec")
+                            fundf=fundf[fundf["ec"].notnull()]
+                            fundf=fundf[fundf["ec"]!=""]
+                            fundf=fundf.merge(keggdf,how="left",on="ec")    
+                            
+                            quantdf=fundf[cats].drop_duplicates()
+                            for cat in cats:
                                 
-                                # Area or Intensity quantification
-                                for c in columns:               
-                                    if c in xlsdf.columns:
-                                        values=xlsdf.loc[xlsdf["Scan"].isin(uniscans),c]
-                                        for m in methods:        
-                                            if  m=="total": sr[cats[j]+"_"+c+"_"+m]=sum(values)                                      
+                                if target=="Spectral_counts":             catdf=fundf[["Scan",cat]].drop_duplicates()
+                                else: catdf=fundf[["Scan",cat,target]].drop_duplicates()
+                                catdf=catdf.explode(cat)
                                 
-                                #append series to dataframe 
-                                df=df.append(sr,ignore_index=True)
-                                df = df[sr.index] #reorder based on series index
-                        if len(df):
-                            keggdf=keggdf.merge(df,on=cats[j]) #join quantifiactions with keggdf        
+                                if target=="Spectral_counts":
+                                    values=pd.Series(Counter(catdf[cat].astype(str))).rename_axis(cat)
+                                    
+                                else:
+                                    catdf[target]=catdf[target].astype(float)
+                                    grouped=catdf.groupby(cat)[target]
+                                    if method=="average": values=grouped.mean()
+                                    elif method=="total": values=grouped.sum()
+                                    elif method=="topx":  values=grouped.nlargest(fun_topx).sum(level=0)
+                                    
+                                                                  
+                                values=values.reset_index(drop=False)
+                                values.columns=[cat,cat+"_"+target]                        
+                                if fun_normalize==True: values[cat,"cat_"+target]=values[cat,cat+"_"+target]/sum(values)       
+                                quantdf=quantdf.merge(values,how="left",on=cat)    
+       
+                                
+                            quantdf=quantdf.dropna()
+                            #writing output
+                            pathout="output_function"
+                            if not os.path.exists(pathout): os.makedirs(pathout)
+                            
+                            basename=filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                            if method=="topx": method=method.replace("x",str(fun_topx))
+                            if target=='Spectral_counts': basename="function_"+target+"_"+basename
+                            else: basename="function_"+method+"_"+target+"_"+basename
+                            if Randomize=="scramble": basename="Rand_"+basename
+                            xlsfilename=str(Path(pathout,basename))
+                            
+                            
+                            writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
+                            
+                            
+                            pardf=pd.DataFrame(fun_parameters,columns=["Name","Value"])
+                            pardf.loc[pardf["Name"]=="fun_count_targets","Value"]=target
+                            pardf.loc[pardf["Name"]=="fun_count_methods","Value"]=method
+                            if target=='Spectral_counts': pardf=pardf[pardf["Name"]!="fun_count_methods"]
+                            pd.DataFrame(pardf.to_excel(writer, sheet_name='Parameters'))
+                            
                 
-                    #write to xlsx
-                    keggdf=keggdf.sort_values(cats)
-                    
-                    #normalize to total spectra/area/intensity, only normalize this way when total counts are used
-                    for i in keggdf.columns:
-                        if "Spectral"   in i: keggdf[i]=keggdf[i]/totSpect
-                        if "Area_total" in i: keggdf[i]=keggdf[i]/totArea
-                        if "Intensity"  in i: keggdf[i]=keggdf[i]/totInt
-    
-                    pathout="output_function"
-                    if not os.path.exists(pathout): os.makedirs(pathout)
-                    
-                    xlsfilename=str(Path(pathout,"function_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')))
-                    writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
-                    pd.DataFrame(fun_parameters,columns=["Name","Value"]).to_excel(writer, sheet_name='Parameters')
-        
-                    for i in cats:
-                        cols=[j for j in keggdf.columns if i in j]
-                        #add previous cols
-                        c=0; prev=list()
-                        while i!=cats[c]:
-                            prev.append(cats[c])
-                            c+=1
-                        cols=prev+cols
-                        keggdf[cols].drop_duplicates().to_excel(writer, sheet_name=i) 
-                     
-                    writer.save()   
-                    writer.close()
+                            for i in cats:
+                                cols=[j for j in quantdf.columns if i in j]
+                                #add previous cols
+                                c=0; prev=list()
+                                while i!=cats[c]:
+                                    prev.append(cats[c])
+                                    c+=1
+                                cols=prev+cols
+                                quantdf[cols].drop_duplicates().to_excel(writer, sheet_name=i) 
+                             
+                            writer.save()   
+                 
                         
 #%% Cleanup (remove .png files)
 cleanup=True
