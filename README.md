@@ -16,7 +16,8 @@ Novobridge is an automated pipeline for fast processing, and integrated annotati
 ## Basic use
 
 #### How does it work?
-The current version of the pipeline is included as a single script: <code>Novobridge.py</code>, which can be run using the command line or from any python interpreter. The pipeline will be turned into a module with separate functions in the near future. The pipeline uses UniPept API methods `pept2lca` and `pept2fun` to annotate taxonomy and function, and uses the KEGG database to match the functional annotations to pathways based on EC numbers.
+The current version of the pipeline is included as a single script: <code>Novobridge.py</code>, which can be run from any python interpreter. 
+The pipeline uses UniPept API methods `pept2lca` and `pept2fun` to annotate taxonomy and function, and uses the KEGG database to match the functional annotations to pathways based on EC numbers.
 
 <br>
 
