@@ -91,6 +91,8 @@ Filter parameters (also applied to Part 3: functional analysis)
 |comp_Intensity_cutoff|0            |numrtic, mininum required intensity                                         |
 |cutbranch            |3            |numeric, minimum amount of unique peptides per taxonomic branch in denoising|
 
+<br>
+
 Quantification parameters
 |Parameter            |Default value                                             | Description                                                            |
 |---------------------|:---------------------------------------------------------|------------------------------------------------------------------------|
@@ -112,6 +114,8 @@ Quantification targets
 |                 |09130 Environmental Information Processing|                                             |
 |                 |09140 Cellular Processes                  |                                             |
 |cats             |cat1,cat2,cat3,cat4                       |list, on which levels of pathways to quantify|  
+
+<br>
 
 Quantification parameters
 |Parameter            |Default value                                             | Description                                                            |
