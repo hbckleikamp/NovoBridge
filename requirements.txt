@@ -1,0 +1,32 @@
+
+
+Test 1. Tested in Spyder on OSX Catalina
+
+Interpreter:
+Spyder version: Spyder 4.1.4 
+Python version: Python 3.7.6
+
+Module versions:
+pandas		1.1.2
+numpy		1.20.0
+matplotlib	3.3.2
+re		2.2.1
+requests	2.24.0
+openpyxl	3.0.4
+pathlib 	1.0.1
+
+
+Test 2. Tested in Spyder on Windows 10
+
+Interpreter:
+Spyder version: Spyder 4.2.1
+Python version: Python 3.6.12
+
+Module versions:
+pandas		1.1.3
+numpy		1.19.2
+matplotlib	3.3.4
+re		2.2.1
+requests	2.25.1
+openpyxl	3.0.6
+pathlib2 	2.3.5
