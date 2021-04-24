@@ -1,9 +1,11 @@
 # NovoBridge
 
 This is the repository for the NovoBridge pipeline, as described in:<br>
-Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BioRxiv (2020) (updated as soon as accepted)      
+Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BioRxiv (2020) (accepted in CELL SYSTEMS)
 
-Available from:<br>
+The pipeline was established and tested with shotgun (meta)proteomics data obtained from Q Exactive Orbitrap Mass Spectrometers, using either PEAKS or DeepNovo generated de novo sequence lists. The generation of accurate de novo peptide sequence lists depends on high quality peptide sequencing spectra.
+
+The preprint is available from:<br>
 https://www.biorxiv.org/content/10.1101/2020.08.16.252924v1
 
 <br>
@@ -150,7 +152,7 @@ As an example: if only spectral counts are desired as outputs, the parameter con
 The pipeline is licensed with standard MIT-license. <br>
 If you would like to use this pipeline in your research, please cite the following papers: 
       
-- Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BiorXiv (2020) (updated as soon as accepted)           
+- Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BiorXiv (2020) (accepted in CELL SYSTEMS)           
 
 - Robbert Gurdeep Singh, Alessandro Tanca, Antonio Palomba, Felix Van der Jeugt, Pieter Verschaffelt, Sergio Uzzau, Lennart Martens, Peter Dawyndt, and Bart Mesuere. (2019). Unipept 4.0: Functional Analysis of Metaproteome Data. J. Proteome Res. 2019, 18, 606−615 Article.
 
@@ -158,14 +160,15 @@ If you would like to use this pipeline in your research, please cite the followi
 
 
 
-
 #### Contact:
 -Hugo Kleimamp (Developer): H.B.C.Kleikamp@tudelft.nl<br> 
 -Martin Pabst: M.Pabst@tudelft.nl<br>
 
+
 #### Recommended links to other repositories:
 https://github.com/unipept<br>
 https://github.com/marbl/Krona
+https://github.com/nh2tran/DeepNovo
 
 
 
