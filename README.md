@@ -167,7 +167,7 @@ If you would like to use this pipeline in your research, please cite the followi
 
 #### Recommended links to other repositories:
 https://github.com/unipept<br>
-https://github.com/marbl/Krona
+https://github.com/marbl/Krona<br>
 https://github.com/nh2tran/DeepNovo
 
 
