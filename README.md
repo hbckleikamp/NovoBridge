@@ -1,12 +1,13 @@
 # NovoBridge
 
 This is the repository for the NovoBridge pipeline, as described in:<br>
-Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Quantitative profiling of microbial communities by de novo metaproteomics, BioRxiv (2020) (accepted in CELL SYSTEMS)
+
+Hugo B. C. Kleikamp, Mario Pronk, Claudia Tugui, Leonor Guedes da Silva, Ben Abbas, Yue Mei Lin, Mark C.M. van Loosdrecht and Martin Pabst* Database-independent de novo metaproteomics of complex microbial communities, Cell Systems (2021)
+doi:10.1016/j.cels.2021.04.003
 
 The pipeline was established and tested with shotgun (meta)proteomics data obtained from Q Exactive Orbitrap Mass Spectrometers, using either PEAKS or DeepNovo generated de novo sequence lists. The generation of accurate de novo peptide sequence lists depends on high quality peptide sequencing spectra.
 
-The preprint is available from:<br>
-https://www.biorxiv.org/content/10.1101/2020.08.16.252924v1
+
 
 <br>
 
