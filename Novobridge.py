@@ -306,6 +306,14 @@ for filename in os.listdir(pathin):
                     t=threading.Thread(target=unipept_scrape, args=[funlist,furl])
                     t.start()
                     threads.append(t)
+                    
+                    #unwind in case of thread overload, manage server traffic
+                    cur_thread=threading.active_count()
+                    if (cur_thread-base_thread)>200:
+                        print("unwinding, query at: "+str(counter/len(unipeps)))
+                        for thread in threads:
+                            thread.join()
+                        threads=[] #this seems to act different on windows?
                      
                 for thread in threads:
                     thread.join()
