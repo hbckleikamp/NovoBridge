@@ -61,10 +61,9 @@ if "krona_template.xlsm" not in os.listdir():
 #%% KEGG KO file
 
 #download
-if not any("keg.pkl" in i for i in os.listdir()):
-    print("Downloading Kegg file")
-    KEGGurl="https://www.genome.jp/kegg-bin/download_htext?htext=ko00001&format=htext&filedir="
-    urllib.request.urlretrieve(KEGGurl, "ko00001.keg")
+print("Downloading Kegg file")
+KEGGurl="https://www.genome.jp/kegg-bin/download_htext?htext=ko00001&format=htext&filedir="
+urllib.request.urlretrieve(KEGGurl, "ko00001.keg")
 
 #read and parse
 with open("ko00001.keg") as file:
@@ -112,5 +111,5 @@ df=df.explode("ec").reset_index(drop=True)
 for i in df.columns:
     df[i]=df[i].astype(str).str.strip()
 
-# save as pickle
-df.to_pickle(str(datetime.datetime.today()).split()[0]+"keg.pkl")
+# save as tsp
+df.to_csv(str(datetime.datetime.today()).split()[0]+"keg.tsv",sep="\t")
