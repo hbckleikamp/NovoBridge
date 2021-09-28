@@ -46,10 +46,10 @@ comp_Intensity_cutoff=0 # mininum required intensity
 cutbranch=3    # minimum amount of unique peptides per taxonomic branch in denoising
 
 #Which taxa to annotate
-comp_ranks=["superkingdom","phylum","class","order","family","genus"]
+comp_ranks=["superkingdom","phylum","class","order","family","genus","species"]
 
 #quantification parameters
-tax_count_targets=["Spectral_counts","Area","Intensity"]
+tax_count_targets=["Spectral_counts"]#,"Area","Intensity"]
 tax_count_methods=["average","total","topx"] 
 tax_topx=5
 tax_normalize=False # normalize quantification to total for that rank
@@ -71,7 +71,7 @@ Pathways=['09100 Metabolism',
 cats=["cat1","cat2","cat3","cat4"]                                    
 
 #quantification parameters
-fun_count_targets=["Spectral_counts","Area","Intensity"]
+fun_count_targets=["Spectral_counts"]#,"Area","Intensity"]
 fun_count_methods=["average","total","topx"] 
 fun_topx=5
 fun_normalize=False # normalize quantification to total for that rank
@@ -86,7 +86,7 @@ import matplotlib.pyplot as plt
 
 import random, re, requests
 import threading, time, string
-import pickle
+
 
 from itertools import chain
 from collections import Counter
@@ -101,6 +101,74 @@ from inspect import getsourcefile
 os.chdir(str(Path(os.path.abspath(getsourcefile(lambda:0))).parents[0]))
 print(os.getcwd())
 
+#%% Functions
+
+# make stacked bars
+
+def stacked_bar(taxa,df,ylabel,pathout,filename): 
+
+    labels=[i.split("_name")[0] for i in taxa];
+    countcols=[i for i in df.columns if "count" in i]
+    absdat=df[countcols] 
+    absdat.columns=labels
+    normdat= absdat/np.nansum(absdat.to_numpy(),axis=0)
+    
+    figure, axes = plt.subplots(1, 2)
+    ax1=absdat.T.plot(ax=axes[0],kind='bar', stacked=True, figsize=(10, 6), legend=False)
+    ax1.set_ylabel(ylabel)
+    ax1.set_xlabel('taxonomic ranks')
+    ax1.set_xticklabels(labels, rotation=30)
+    ax1.set_title("Absolute")
+    
+    ax2=normdat.T.plot(ax=axes[1],kind='bar', stacked=True, figsize=(10, 6), legend=False)
+    ax2.set_ylabel(ylabel)
+    ax2.set_xlabel('taxonomic ranks')
+    ax2.set_xticklabels(labels, rotation=30)
+    ax2.set_title("Normalized")
+    
+    
+    plt.gcf().suptitle(Path(basename).stem)
+    
+    figname=str(Path(pathout,(filename.replace(os.path.splitext(filename)[1], '.png'))))
+    
+    plt.savefig(figname)
+    
+    #plot legend in separate plot
+    
+    
+    
+    return figname    
+
+
+
+#mass calculation for DeepNovo                    
+std_aa_mass = {'G': 57.02146, 'A': 71.03711, 'S': 87.03203, 'P': 97.05276, 'V': 99.06841,
+               'T': 101.04768,'C': 103.00919,'L': 113.08406,'I': 113.08406,'J': 113.08406,
+               'N': 114.04293,'D': 115.02694,'Q': 128.05858,'K': 128.09496,'E': 129.04259,
+               'M': 131.04049,'H': 137.05891,'F': 147.06841,'U': 150.95364,'R': 156.10111,
+               'Y': 163.06333,'W': 186.07931,'O': 237.14773}  
+
+def mass_calc(x,std_aa_mass=std_aa_mass):
+    return sum(std_aa_mass.get(aa) for aa in x)+18.01056
+
+# Threading unipept
+def unipept_scrape(r,url):
+    
+    while True:
+        try:
+            r.extend(requests.get(url,stream=True).json())
+            break
+        except:
+            "sleeping"
+            time.sleep(2)
+            
+            
+# chunker
+def chunks(lst,n):
+    for i in range(0,len(lst),n):
+        yield lst[i:i+n]
+
+
 #%% 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -108,11 +176,10 @@ print(os.getcwd())
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 pathin="input_peaks" #input folder
-
-
+s=time.time()
 for filename in os.listdir(pathin): 
-    if filename[0].isalnum(): # check if not a hidden file, filename should start with alphanumeric
-        for Randomize in [False, 'scramble']: 
+    if Path(filename).stem[0].isalnum(): # check if not a hidden file, filename should start with alphanumeric
+        for Randomize in [False]: #, 'scramble']: 
             xlsdf=[]
             
             if filename.endswith('.txt'):                        
@@ -137,19 +204,10 @@ for filename in os.listdir(pathin):
                     mass+=xlsdf["Peptide"].str.count("(Oxidation)").fillna(0)*15.994915
     
                     xlsdf['Peptide']=xlsdf['Peptide'].apply(lambda x: re.sub("[\(\[].*?[\)\]]", "", x).replace(",","")) #remove ptms in peptides
-                    xlsdf["Tag Length"]=xlsdf['Peptide'].apply(len)
+                    
     
                     
-                    #%% calculate peptide mass differently
-                    
-                    std_aa_mass = {'G': 57.02146, 'A': 71.03711, 'S': 87.03203, 'P': 97.05276, 'V': 99.06841,
-                                   'T': 101.04768,'C': 103.00919,'L': 113.08406,'I': 113.08406,'J': 113.08406,
-                                   'N': 114.04293,'D': 115.02694,'Q': 128.05858,'K': 128.09496,'E': 129.04259,
-                                   'M': 131.04049,'H': 137.05891,'F': 147.06841,'U': 150.95364,'R': 156.10111,
-                                   'Y': 163.06333,'W': 186.07931,'O': 237.14773}    
-    
-                    def mass_calc(x,std_aa_mass=std_aa_mass):
-                        return sum(std_aa_mass.get(aa) for aa in x)+18.01056
+                    #%% calculate peptide mass foor DeepNovo  
                     
                     xlsdf['calculated_mass']=mass[0]+xlsdf['Peptide'].apply(lambda x: mass_calc(x)).values
                     xlsdf['precursor_mass']=xlsdf['precursor_mz']*xlsdf['precursor_charge']-xlsdf['precursor_charge']*1.007277                
@@ -161,6 +219,9 @@ for filename in os.listdir(pathin):
                     if "feature_intensity" in xlsdf.columns: xlsdf=xlsdf.rename(columns={"feature_intensity":"Intensity"})  
                 
                 #set datatypes as float
+                xlsdf["Tag Length"]=xlsdf['Peptide'].apply(len)
+                xlsdf=xlsdf.fillna("0") #replace nans with zero
+                
                 for i in ['Tag Length','ALC (%)','predicted_score','ppm','Area','Intensity']:
                     if i in xlsdf.columns:
                         xlsdf[i]=xlsdf[i].astype(float) 
@@ -198,11 +259,18 @@ for filename in os.listdir(pathin):
                 
                     if 'Intensity' in xlsdf.columns: 
                         xlsdf=xlsdf[xlsdf['Intensity']>=Intensity_cutoff]
-                                    
+                        
                 #%% randomization (optional)
                 if   Randomize=='scramble': #scramble all in front of cleavage site
                      xlsdf['Peptide']=[''.join(random.sample(i[:len(i)-1], len(i)-1)+[i[-1]]) for i in xlsdf['Peptide']]
-                       
+                
+                #%% if multiple candidates, sort by scan, add candidate list and select best
+                if 'ALC (%)' in xlsdf.columns: xlsdf=xlsdf.sort_values(['Scan', 'ALC (%)','Tag Length'], ascending=[1, 0, 0])
+                elif 'predicted_score' in xlsdf.columns: xlsdf=xlsdf.sort_values(['Scan', 'predicted_score','Tag Length'], ascending=[1, 0, 0])
+                else: xlsdf=xlsdf.sort_values(['Scan','Tag Length'], ascending=[1, 0, 0])
+                xlsdf['Candidate'] = xlsdf.groupby('Scan').cumcount() + 1
+                xlsdf=xlsdf[xlsdf["Candidate"]==1]
+                        
                 #%% submit peptides to unipept
                 
                 #urls
@@ -211,31 +279,12 @@ for filename in os.listdir(pathin):
                 fwl='http://api.unipept.ugent.be/api/v1/pept2funct.json?input[]=';
                 fwr='&equate_il=true';
                 
-                taxa=[rank+"_name" for rank in comp_ranks]
-                fields=["peptide"]+taxa
+                ranks=[rank+"_name" for rank in comp_ranks]
+                fields=["peptide"]+["taxon_name"]+ranks
                   
                 unipeps=np.unique(xlsdf['Peptide'])
                 batchsize=100
                 steps=list(range(0,len(unipeps),batchsize))
-                
-                # Threading unipept
-                def unipept_scrape(r,url):
-                    
-                    while True:
-                        try:
-                            r.extend(requests.get(url,stream=True).json())
-                            break
-                        except:
-                            "sleeping"
-                            time.sleep(2)
-                            
-                            
-                # is used to divide a list into "chunks" with a generator
-                def chunks(lst,n):
-                    for i in range(0,len(lst),n):
-                        yield lst[i:i+n]
-                
-    
                 taxalist=list()
                 funlist=list()
     
@@ -283,17 +332,16 @@ for filename in os.listdir(pathin):
                 xlsdf=xlsdf.fillna("")
                 #%% write result
     
+
+    
                 pathout="output_unipept"
                 if not os.path.exists(pathout): os.makedirs(pathout)
                 
-                basename="unipept_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                basename="unipept_nb_"+Path(filename).stem+ '.tsv'
                 if Randomize=="scramble": basename="Rand_"+basename
-                xlsfilename=str(Path(pathout,basename))
-                
-                writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
-                xlsdf.to_excel(writer, sheet_name='Output')
-                pd.DataFrame(parameters,columns=["Name","Value"]).to_excel(writer, sheet_name='Parameters')
-                writer.save()
+                outfilename=str(Path(pathout,basename))
+                xlsdf.to_csv(outfilename,sep="\t")
+
 
         
         #%%
@@ -303,6 +351,12 @@ for filename in os.listdir(pathin):
                 
                 
                 #%% Pre_processing filtering & denoising
+                
+                #if multiple candidates, pick best
+                
+                
+                
+                #%%
                 
                 filt="on"
                 if filt=="on":    
@@ -327,11 +381,11 @@ for filename in os.listdir(pathin):
                   
                 denoise="on"
                 if denoise=="on":
-                    unirows=xlsdf[["Peptide"]+taxa].drop_duplicates()[taxa].astype(str).values.tolist()
+                    unirows=xlsdf[["Peptide"]+ranks].drop_duplicates()[ranks].astype(str).values.tolist()
                     jbranch=["#*".join(i) for i in unirows]
                     fbranch=[branch for branch, counts in Counter(jbranch).items() if counts >= cutbranch]
                     allowed_taxids=set(chain(*[i.split("#*") for i in fbranch]))
-                    for i in taxa:
+                    for i in ranks:
                         xlsdf.loc[~xlsdf[i].isin(allowed_taxids),i]="" 
                             
                 #%% krona plot (only coded for spectral counting)
@@ -341,13 +395,13 @@ for filename in os.listdir(pathin):
                 
                 if "krona_template.xlsm" in os.listdir():
                     
-                    grouped=xlsdf.groupby(taxa)
+                    grouped=xlsdf.groupby(ranks)
                     vals=grouped.size() 
                     vals=vals.reset_index(name="Count")  
-                    vals=vals[~(vals[taxa]=="").all(axis=1)] #remove empty rows
+                    vals=vals[~(vals[ranks]=="").all(axis=1)] #remove empty rows
                     
                     #results
-                    branches=vals[taxa].values.tolist()  
+                    branches=vals[ranks].values.tolist()  
                     counts=  vals["Count"].tolist()
                     
                     #fill gaps
@@ -355,11 +409,11 @@ for filename in os.listdir(pathin):
                         j=[j for j in range(len(branches[i])) if branches[i][j]!=""]
                         for l in range(0,max(j)):
                             if branches[i][l]=="": branches[i][l]="annotation_gap"     
-                    vals[taxa]=branches
+                    vals[ranks]=branches
                     
                     branchdf=vals
     
-                    kronafilename=str(Path(pathout,"Spectral_counts_Krona_"+filename.replace(os.path.splitext(filename)[1], '.xlsm')))
+                    kronafilename=str(Path(pathout,"Spectral_counts_Krona_"+Path(filename).stem+ '.xlsm'))
                     letters=list(string.ascii_uppercase)
                     wb = load_workbook("krona_template.xlsm",read_only=False, keep_vba=True)
                     ws = wb.active
@@ -367,51 +421,21 @@ for filename in os.listdir(pathin):
                     
                         ws['A{0}'.format(4+i)].value=filename
                         ws['B{0}'.format(4+i)].value=counts[i]
-                        for j in range(0,len(taxa)):
+                        for j in range(0,len(ranks)):
                             ws['{0}{1}'.format(letters[j+3],4+i)].value=branches[i][j]
                     wb.save(kronafilename)   
                     
                 else:
                     print("No Krona template found, proceding without generating krona plots")
                     
-                #%% make stacked bars
-                
-                def stacked_bar(taxa,df,ylabel,pathout,filename): 
-                
-                    labels=[i.split("_name")[0] for i in taxa];
-                    countcols=[i for i in df.columns if "count" in i]
-                    absdat=df[countcols] 
-                    absdat.columns=labels
-                    normdat= absdat/np.nansum(absdat.to_numpy(),axis=0)
-                    
-                    figure, axes = plt.subplots(1, 2)
-                    ax1=absdat.T.plot(ax=axes[0],kind='bar', stacked=True, figsize=(10, 6), legend=False)
-                    ax1.set_ylabel(ylabel)
-                    ax1.set_xlabel('taxonomic ranks')
-                    ax1.set_xticklabels(labels, rotation=30)
-                    ax1.set_title("Absolute")
-                    
-                    ax2=normdat.T.plot(ax=axes[1],kind='bar', stacked=True, figsize=(10, 6), legend=False)
-                    ax2.set_ylabel(ylabel)
-                    ax2.set_xlabel('taxonomic ranks')
-                    ax2.set_xticklabels(labels, rotation=30)
-                    ax2.set_title("Normalized")
-                    
-                    figname=str(Path(pathout,(filename.replace(os.path.splitext(filename)[1], '.png'))))
-                    plt.savefig(figname)
-                    return figname      
+  
                 
                 #%% quantification and visual outputs, write output to xlsx
                 pathout="output_composition"
                 if not os.path.exists(pathout): os.makedirs(pathout)
                 
-                xlsfilename=str(Path(pathout,"composition_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')))
-                if Randomize=="scramble":
-                    xlsfilename=str(Path(pathout,"Rand_composition_"+filename.replace(os.path.splitext(filename)[1], '.xlsx')))
-                
-                writer = pd.ExcelWriter(xlsfilename, engine='xlsxwriter')
-                pd.DataFrame(comp_parameters,columns=["Name","Value"]).to_excel(writer, sheet_name='Parameters')
-                
+
+      
                 if type(tax_count_targets)==str: tax_count_targets=list(tax_count_targets)
                 for target in tax_count_targets:
                     
@@ -426,24 +450,24 @@ for filename in os.listdir(pathin):
             
             
                         quantdf=pd.DataFrame()
-                        for tax in taxa:
+                        for rank in ranks:
                             
                             if target=="Spectral_counts":          
-                                values=Counter(xlsdf[tax].astype(str))
+                                values=Counter(xlsdf[rank].astype(str))
                                 if "" in values.keys(): values.pop("") #ignore unassigned peptides
                                 
                             else:
                                 xlsdf[target]=xlsdf[target].astype(float)
-                                grouped=xlsdf.groupby(tax)[target]
+                                grouped=xlsdf.groupby(rank)[target]
                                 if method=="average": values=grouped.mean()
                                 elif method=="total":values=grouped.sum()
                                 elif method=="topx": values=grouped.nlargest(tax_topx).sum(level=0)
                     
                             values=pd.Series(values).sort_values(axis=0, ascending=False, inplace=False).reset_index()
-                            values.columns=[tax,tax+"_count"]   
-                            values=values[values[tax]!=""]
+                            values.columns=[rank,rank+"_count"]   
+                            values=values[values[rank]!=""]
                             if tax_normalize==True: 
-                                values[tax+"_count"]=values[tax+"_count"]/values[tax+"_count"].sum()*100 #normalize to 100%
+                                values[rank+"_count"]=values[rank+"_count"]/values[rank+"_count"].sum()*100 #normalize to 100%
                             
                             quantdf = pd.concat([quantdf, values], axis=1) 
                 
@@ -456,7 +480,7 @@ for filename in os.listdir(pathin):
                         countcols=[i for i in quantdf.columns  if "count" in i] 
                        
                         
-                        basename=filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                        basename=Path(filename).stem+ '.xlsx'
                         if method=="topx": method=method.replace("x",str(fun_topx))
                         if target=='Spectral_counts': basename="composition_"+target+"_"+basename
                         else: basename="composition_"+method+"_"+target+"_"+basename
@@ -474,8 +498,8 @@ for filename in os.listdir(pathin):
                         quantdf[namecols].to_excel(writer, sheet_name='TAX_LINEAGES')
                         quantdf[countcols].to_excel(writer, sheet_name='TAX_COUNTS')
                         
-                        if target=='Spectral_counts': stacked_bar(taxa,quantdf,target,pathout, basename)
-                        else:                         stacked_bar(taxa,quantdf,method+"_"+target,pathout, basename)
+                        if target=='Spectral_counts': stacked_bar(ranks,quantdf,target,pathout, basename)
+                        else:                         stacked_bar(ranks,quantdf,method+"_"+target,pathout, basename)
                         
  
                         writer.save()   
@@ -502,15 +526,14 @@ for filename in os.listdir(pathin):
                 #%% quantification
                 
                 #check if kegg database is present
-                if not any("keg.pkl" in i for i in os.listdir()):
+                if not any("keg.tsv" in i for i in os.listdir()):
                     print("no local kegg database found, please run download_utilities.py before functional annotation can be done")
                     
                 else: #Load local kegg database
-                    for pkl in os.listdir():
-                        if pkl.endswith('keg.pkl'):  
-                            infile = open(pkl,'rb')
-                            keggdf  = pickle.load(infile)
-                            infile.close()
+                    for tsv in os.listdir():
+                        if tsv.endswith('keg.tsv') and tsv[0].isalnum():  
+                            keggdf  = pd.read_csv(tsv,sep="\t")
+
                     
                     #only select pathways that are in the parameters
                     keggdf=keggdf[keggdf.isin(Pathways).any(axis=1)] 
@@ -568,7 +591,7 @@ for filename in os.listdir(pathin):
                             pathout="output_function"
                             if not os.path.exists(pathout): os.makedirs(pathout)
                             
-                            basename=filename.replace(os.path.splitext(filename)[1], '.xlsx')
+                            basename=Path(filename).stem+ '.xlsx'
                             if method=="topx": method=method.replace("x",str(fun_topx))
                             if target=='Spectral_counts': basename="function_"+target+"_"+basename
                             else: basename="function_"+method+"_"+target+"_"+basename
@@ -602,7 +625,9 @@ for filename in os.listdir(pathin):
 #%% Cleanup (remove .png files)
 cleanup=True
 if cleanup:
-    [os.remove(i) for i in os.listdir() if i.endswith(".png")]
+    [os.remove(i) for i in os.listdir() if i.endswith(".png") and i[0].isalnum()]
+
+print("elaped time: "+str(s-time.time()))
 
 
 
