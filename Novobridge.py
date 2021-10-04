@@ -188,14 +188,17 @@ for filename in os.listdir(pathin):
             
             #added dynamic delimiter detection
             if filename.endswith('.csv'):
-                xlsdf=pd.read_csv(str(Path(pathin,filename)))
+                xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
                 if "Peptide" not in xlsdf.columns: 
                     delims=[i[0] for i in Counter([i for i in str(xlsdf.iloc[0]) if not i.isalnum()]).most_common()]
                     for delim in delims:
                         if delim==" ": sep="\s"
-                        xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=delim)
-                        if "Peptide" in xlsdf.columns:
-                            break
+                        try:
+                            xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=delim)
+                            if "Peptide" in xlsdf.columns:
+                                break
+                        except:
+                            pass
                         
             if filename.endswith('.tsv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep="\t")
             if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)),engine='openpyxl')   
@@ -291,8 +294,7 @@ for filename in os.listdir(pathin):
                 
                 ranks=[rank+"_name" for rank in comp_ranks]
                 fields=["peptide"]+["taxon_name"]+ranks
-                
-                base_thread=threading.active_count()
+                  
                 unipeps=np.unique(xlsdf['Peptide'])
                 batchsize=100
                 steps=list(range(0,len(unipeps),batchsize))
@@ -646,7 +648,7 @@ cleanup=True
 if cleanup:
     [os.remove(i) for i in os.listdir() if i.endswith(".png") and i[0].isalnum()]
 
-print("elaped time: "+str(time.time()-s))
+print("elaped time: "+str(s-time.time()))
 
 
 
