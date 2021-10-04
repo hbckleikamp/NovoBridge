@@ -186,7 +186,16 @@ for filename in os.listdir(pathin):
                 with open(filename,"r") as f: 
                     xlsdf=pd.DataFrame(f.readlines())
             
-            if filename.endswith('.csv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
+            #added dynamic delimiter detection
+            if filename.endswith('.csv'):
+                xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=",")
+                delims=[i[0] for i in Counter([i for i in str(xlsdf.iloc[0]) if not i.isalnum()]).most_common()]
+                for delim in delims:
+                    if delim==" ": sep="\s"
+                    xlsdf=pd.read_csv(str(Path(pathin,filename)),sep=delim)
+                    if "Peptide" in df.columns:
+                        break
+                        
             if filename.endswith('.tsv'):                               xlsdf=pd.read_csv(str(Path(pathin,filename)),sep="\t")
             if filename.endswith('.xlsx') or filename.endswith('.xls'): xlsdf=pd.read_excel(str(Path(pathin,filename)),engine='openpyxl')   
             if len(xlsdf):
