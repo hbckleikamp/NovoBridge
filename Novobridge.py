@@ -294,7 +294,8 @@ for filename in os.listdir(pathin):
                 
                 ranks=[rank+"_name" for rank in comp_ranks]
                 fields=["peptide"]+["taxon_name"]+ranks
-                  
+                
+                base_thread=threading.active_count()
                 unipeps=np.unique(xlsdf['Peptide'])
                 batchsize=100
                 steps=list(range(0,len(unipeps),batchsize))
