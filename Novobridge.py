@@ -649,7 +649,7 @@ cleanup=True
 if cleanup:
     [os.remove(i) for i in os.listdir() if i.endswith(".png") and i[0].isalnum()]
 
-print("elaped time: "+str(s-time.time()))
+print("elaped time: "+str(time.time()-s))
 
 
 
