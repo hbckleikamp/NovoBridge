@@ -7,7 +7,7 @@ doi:10.1016/j.cels.2021.04.003
 
 The pipeline was established and tested with shotgun (meta)proteomics data obtained from Q Exactive Orbitrap Mass Spectrometers, using either PEAKS or DeepNovo generated de novo sequence lists. The generation of accurate de novo peptide sequence lists depends on high quality peptide sequencing spectra.
 
-
+NovoBridge has been tested online in an Anaconda Spyder environment!
 
 <br>
 
