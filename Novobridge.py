@@ -262,7 +262,7 @@ for filename in os.listdir(pathin):
                         xlsdf=xlsdf[xlsdf['ALC (%)']>=ALC_cutoff] #scoring Peaks 
                     
                     if 'predicted_score' in xlsdf.columns:
-                        xlsdf=xlsdf[xlsdf['predicted_score']<=Score_cutoff] #scoring DeepNovo 
+                        xlsdf=xlsdf[xlsdf['predicted_score']>=Score_cutoff] #scoring DeepNovo 
                     
                     if 'ppm' in xlsdf.columns: 
                         xlsdf=xlsdf[xlsdf['ppm']<=ppm_cutoff]
