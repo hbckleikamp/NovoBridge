@@ -94,11 +94,11 @@ df.columns=["cat1","cat2","cat3","cat4"]
 df=df[~df["cat4"].isnull()]
 
 #split cat4
-df[["KO","Genes"]] = df["cat4"].str.split(" ", 1, expand=True)
-df["Description"]=df["Genes"].str.split("; ", 1, expand=True)[1]
-df["Genes"]=df["Genes"].str.split("; ", 1, expand=True)[0]
-df["ec"]=df["Description"].str.split("EC:", 1, expand=True)[1].str[:-1]
-df["Description"]=df["Description"].str.split("EC:", 1, expand=True)[0].str[:-1]
+df[["KO","Genes"]] = df["cat4"].str.rsplit("  ", n=1, expand=True)
+df["Description"]=df["Genes"].str.split("; ", n=1, expand=True)[1]
+df["Genes"]=df["Genes"].str.split("; ", n=1, expand=True)[0]
+df["ec"]=df["Description"].str.split("EC:", n=1, expand=True)[1].str[:-1]
+df["Description"]=df["Description"].str.split("EC:", n=1, expand=True)[0].str[:-1]
 
 #explode genes and EC nos for exact string matching
 df["Genes"]=df["Genes"].str.split(",")
