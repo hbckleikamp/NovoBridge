@@ -46,7 +46,7 @@ comp_Intensity_cutoff=0 # mininum required intensity
 cutbranch=3    # minimum amount of unique peptides per taxonomic branch in denoising
 
 #Which taxa to annotate
-comp_ranks=["superkingdom","phylum","class","order","family","genus","species"]
+comp_ranks=["domain","phylum","class","order","family","genus","species"]
 
 #quantification parameters
 tax_count_targets=["Spectral_counts"]#,"Area","Intensity"]
